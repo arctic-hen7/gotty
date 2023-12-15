@@ -37,6 +37,26 @@ export class OurXterm {
         this.term.loadAddon(this.fitAddOn);
         this.term.loadAddon(this.zmodemAddon);
 
+        // HACK: Literally some of the worst code I have ever written, but xterm.js is stunningly
+        // dumb in this case. Adds some latency for repeated Ctrl-Backspace presses, but otherwise
+        // works excellently. For those cases, use Ctrl-H directly.
+        let ctrlBackspacePressed = false;
+        this.term.attachCustomKeyEventHandler(e => {
+            // Check for Ctrl-Backspace key combination (ASCII code: 8)
+            if (e.ctrlKey && e.key === "Backspace") {
+                if (ctrlBackspacePressed) return false;
+                ctrlBackspacePressed = true;
+
+                // Perform your custom action here
+                this.sendInput(new Uint8Array([8]));
+                setTimeout(() => {
+                    ctrlBackspacePressed = false;
+                }, 100);
+                return false; // Prevent default action
+            }
+            return true; // Allow default action for other keys
+        });
+
         this.message = elem.ownerDocument.createElement("div");
         this.message.className = "xterm-overlay";
         this.messageTimeout = 2000;
